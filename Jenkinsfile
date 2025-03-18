@@ -37,23 +37,35 @@ pipeline {
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
                     script {
-                        // Build backend services
-                        sh """
-                        echo "🚀 Building and Pushing hello-service..."
-                        docker build -t hello-service:${IMAGE_TAG} backend/hello-service/
-                        docker tag hello-service:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hello-service:${IMAGE_TAG}
-                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hello-service:${IMAGE_TAG}
+                        // First, list the directory contents to debug
+                        sh "ls -la"
+                        sh "ls -la backend || echo 'backend directory not found'"
+                        sh "ls -la frontend || echo 'frontend directory not found'"
                         
-                        echo "🚀 Building and Pushing profile-service..."
-                        docker build -t profile-service:${IMAGE_TAG} backend/profile-service/
-                        docker tag profile-service:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/profile-service:${IMAGE_TAG}
-                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/profile-service:${IMAGE_TAG}
+                        // Define services and their paths
+                        def services = [
+                            [name: 'hello-service', path: 'backend/hello-service'],
+                            [name: 'profile-service', path: 'backend/profile-service'],
+                            [name: 'mern-frontend', path: 'frontend']
+                        ]
                         
-                        echo "🚀 Building and Pushing mern-frontend..."
-                        docker build -t mern-frontend:${IMAGE_TAG} frontend/
-                        docker tag mern-frontend:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mern-frontend:${IMAGE_TAG}
-                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mern-frontend:${IMAGE_TAG}
-                        """
+                        // Build and push each service
+                        for (service in services) {
+                            def serviceName = service.name
+                            def servicePath = service.path
+                            
+                            sh """
+                            echo "🔍 Checking path for ${serviceName}..."
+                            if [ -d "${servicePath}" ]; then
+                                echo "🚀 Building and Pushing ${serviceName}..."
+                                docker build -t ${serviceName}:${IMAGE_TAG} ${servicePath}/
+                                docker tag ${serviceName}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${serviceName}:${IMAGE_TAG}
+                                docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${serviceName}:${IMAGE_TAG}
+                            else
+                                echo "⚠️ Directory ${servicePath} not found. Skipping ${serviceName}."
+                            fi
+                            """
+                        }
                     }
                 }
             }
