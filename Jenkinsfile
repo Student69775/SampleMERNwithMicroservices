@@ -37,15 +37,23 @@ pipeline {
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
                     script {
-                        def ECR_REPOS = ['hello-service', 'profile-service', 'mern-frontend']
-                        for (repo in ECR_REPOS) {
-                            sh """
-                            echo "🚀 Building and Pushing ${repo}..."
-                            docker build -t ${repo}:${IMAGE_TAG} ${repo}/
-                            docker tag ${repo}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${repo}:${IMAGE_TAG}
-                            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${repo}:${IMAGE_TAG}
-                            """
-                        }
+                        // Build backend services
+                        sh """
+                        echo "🚀 Building and Pushing hello-service..."
+                        docker build -t hello-service:${IMAGE_TAG} backend/hello-service/
+                        docker tag hello-service:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hello-service:${IMAGE_TAG}
+                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/hello-service:${IMAGE_TAG}
+                        
+                        echo "🚀 Building and Pushing profile-service..."
+                        docker build -t profile-service:${IMAGE_TAG} backend/profile-service/
+                        docker tag profile-service:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/profile-service:${IMAGE_TAG}
+                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/profile-service:${IMAGE_TAG}
+                        
+                        echo "🚀 Building and Pushing mern-frontend..."
+                        docker build -t mern-frontend:${IMAGE_TAG} frontend/
+                        docker tag mern-frontend:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mern-frontend:${IMAGE_TAG}
+                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/mern-frontend:${IMAGE_TAG}
+                        """
                     }
                 }
             }
